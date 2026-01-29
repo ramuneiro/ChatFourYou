@@ -92,24 +92,24 @@ def handle_message(data):
         emit('error', {'message': 'ログインが必要です'})
         return
     
-    context = data.get('message', '').strip()
-    if not context:
+    message = data.get('message', '').strip()
+    if not message:
         emit('error', {'message': 'メッセージが空です'})
         return
-    
+
     user_id = session['user_id']
     username = session['username']
-    
+
     # データベースに保存
-    msg_id = db.save_message(user_id, username, context)
-    
+    msg_id = db.save_message(user_id, message)
+
     if msg_id:
         # 全クライアントにメッセージをブロードキャスト
         message_data = {
-            'id': msg_id,
+            'msg_id': msg_id,
             'user_id': user_id,
             'username': username,
-            'message': context,
+            'message': message,
             'created_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         emit('new_message', message_data, broadcast=True)

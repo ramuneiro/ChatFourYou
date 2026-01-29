@@ -83,8 +83,8 @@ class Database:
     def create_user(self, username):
         """新しいユーザーを作成"""
         try:
-            query = "INSERT INTO users (username) VALUES (%s)"
-            user_id = self.execute_query(query, (username,))
+            query = "INSERT INTO users (username, display_name) VALUES (%s, %s)"
+            user_id = self.execute_query(query, (username, username))
             if user_id:
                 print(f"ユーザー作成成功: {username} (ID: {user_id})")
             else:
@@ -101,15 +101,15 @@ class Database:
         return result[0] if result else None
     
     # メッセージ関連のメソッド
-    def save_message(self, user_id, username, message):
+    def save_message(self, user_id, message):
         """メッセージを保存"""
-        query = "INSERT INTO messages (user_id, username, message) VALUES (%s, %s, %s)"
-        return self.execute_query(query, (user_id, username, message))
+        query = "INSERT INTO messages (user_id, message) VALUES (%s, %s)"
+        return self.execute_query(query, (user_id, message))
     
     def get_messages(self, limit=50):
         """最新のメッセージを取得"""
         query = """
-            SELECT id, user_id, username, message, created_at 
+            SELECT msg_id, user_id, message, created_at 
             FROM messages 
             ORDER BY created_at DESC 
             LIMIT %s
@@ -117,7 +117,7 @@ class Database:
         messages = self.fetch_query(query, (limit,))
         return list(reversed(messages))  # 古い順に並び替え
     
-    def delete_message(self, message_id):
+    def delete_message(self, msg_id):
         """メッセージを削除"""
         query = "DELETE FROM messages WHERE id = %s"
-        return self.execute_query(query, (message_id,))
+        return self.execute_query(query, (msg_id,))
