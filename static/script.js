@@ -82,14 +82,22 @@ function sendMessage() {
 // メッセージを読み込み
 function loadMessages() {
     fetch('/messages')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             messagesContainer.innerHTML = '';
-            data.messages.forEach(msg => displayMessage(msg));
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => displayMessage(msg));
+            }
             scrollToBottom();
         })
         .catch(error => {
             console.error('メッセージ読み込みエラー:', error);
+            messagesContainer.innerHTML = '<div class="error-message">メッセージの読み込みに失敗しました</div>';
         });
 }
 

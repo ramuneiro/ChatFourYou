@@ -49,19 +49,27 @@ def login():
 @app.route('/messages', methods=['GET'])
 def get_messages():
     """メッセージ一覧を取得"""
-    messages = db.get_messages()
-    return jsonify({'messages': messages})
+    try:
+        print("メッセージ取得開始")
+        messages = db.get_messages()
+        print(f"メッセージ取得成功: {len(messages)}件")
+        return jsonify({'messages': messages})
+    except Exception as e:
+        print(f"メッセージ取得エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'メッセージ取得に失敗しました', 'messages': []}), 500
 
-@app.route('/messages/<int:message_id>', methods=['DELETE'])
-def delete_message(message_id):
+@app.route('/messages/<int:msg_id>', methods=['DELETE'])
+def delete_message(msg_id):
     """メッセージを削除"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'ログインが必要です'})
     
-    result = db.delete_message(message_id)
+    result = db.delete_message(msg_id)
     if result is not None:
         # 全クライアントに削除を通知
-        socketio.emit('message_deleted', {'message_id': message_id}, broadcast=True)
+        socketio.emit('message_deleted', {'msg_id': msg_id}, broadcast=True)
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': '削除に失敗しました'})
@@ -84,8 +92,8 @@ def handle_message(data):
         emit('error', {'message': 'ログインが必要です'})
         return
     
-    message = data.get('message', '').strip()
-    if not message:
+    context = data.get('message', '').strip()
+    if not context:
         emit('error', {'message': 'メッセージが空です'})
         return
     
@@ -93,15 +101,15 @@ def handle_message(data):
     username = session['username']
     
     # データベースに保存
-    message_id = db.save_message(user_id, username, message)
+    msg_id = db.save_message(user_id, username, context)
     
-    if message_id:
+    if msg_id:
         # 全クライアントにメッセージをブロードキャスト
         message_data = {
-            'id': message_id,
+            'id': msg_id,
             'user_id': user_id,
             'username': username,
-            'message': message,
+            'message': context,
             'created_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         emit('new_message', message_data, broadcast=True)
