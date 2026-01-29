@@ -36,12 +36,12 @@ def login():
     if not user:
         user_id = db.create_user(username)
         if user_id:
-            user = {'id': user_id, 'username': username}
+            user = {'user_id': user_id, 'username': username}
         else:
             return jsonify({'success': False, 'message': 'ユーザー作成に失敗しました'})
     
     # セッションに保存
-    session['user_id'] = user['id']
+    session['user_id'] = user['user_id']
     session['username'] = user['username']
     
     return jsonify({'success': True, 'username': username})
