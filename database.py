@@ -109,9 +109,10 @@ class Database:
     def get_messages(self, limit=50):
         """最新のメッセージを取得"""
         query = """
-            SELECT msg_id, user_id, message, created_at 
+              SELECT m.msg_id, m.user_id, u.username, u.display_name, m.context, m.created_at
             FROM messages 
-            ORDER BY created_at DESC 
+              JOIN users u ON m.user_id = u.user_id
+              ORDER BY m.created_at DESC
             LIMIT %s
         """
         messages = self.fetch_query(query, (limit,))
@@ -119,5 +120,5 @@ class Database:
     
     def delete_message(self, msg_id):
         """メッセージを削除"""
-        query = "DELETE FROM messages WHERE id = %s"
+        query = "DELETE FROM messages WHERE msg_id = %s"
         return self.execute_query(query, (msg_id,))

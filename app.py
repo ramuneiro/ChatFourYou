@@ -40,7 +40,8 @@ def login():
         else:
             return jsonify({'success': False, 'message': 'ユーザー作成に失敗しました'})
     
-    # セッションに保存
+    # セッションをクリアしてから保存
+    session.clear()
     session['user_id'] = user['user_id']
     session['username'] = user['username']
     

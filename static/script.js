@@ -105,36 +105,38 @@ function loadMessages() {
 function displayMessage(msg) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message';
-    messageDiv.dataset.messageId = msg.id;
-    
+    // msg_id優先、なければid
+    const messageId = msg.msg_id || msg.id;
+    messageDiv.dataset.messageId = messageId;
+
     const headerDiv = document.createElement('div');
     headerDiv.className = 'message-header';
-    
+
     const usernameSpan = document.createElement('span');
     usernameSpan.className = 'message-username';
-    usernameSpan.textContent = msg.username;
-    
+    usernameSpan.textContent = msg.username || '';
+
     const timeSpan = document.createElement('span');
     timeSpan.className = 'message-time';
     timeSpan.textContent = formatTime(msg.created_at);
-    
+
     headerDiv.appendChild(usernameSpan);
     headerDiv.appendChild(timeSpan);
-    
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = msg.message;
-    
+    contentDiv.textContent = msg.context || msg.message || '';
+
     messageDiv.appendChild(headerDiv);
     messageDiv.appendChild(contentDiv);
-    
+
     // 削除ボタンを追加（全ユーザーが削除可能）
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
     deleteBtn.textContent = '削除';
-    deleteBtn.onclick = () => deleteMessage(msg.id);
+    deleteBtn.onclick = () => deleteMessage(messageId);
     messageDiv.appendChild(deleteBtn);
-    
+
     messagesContainer.appendChild(messageDiv);
 }
 
