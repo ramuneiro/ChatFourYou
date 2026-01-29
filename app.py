@@ -6,10 +6,14 @@ import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config['SESSION_TYPE'] = 'filesystem'  # Add this for better session handling
+socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)  # Add manage_session=False
 
 # データベースインスタンス
 db = Database()
+
+# Store user sessions for SocketIO
+connected_users = {}  # Add this dictionary to track users by socket ID
 
 @app.before_request
 def before_request():
@@ -44,7 +48,7 @@ def login():
     session['user_id'] = user['user_id']
     session['username'] = user['username']
     
-    return jsonify({'success': True, 'username': username})
+    return jsonify({'success': True, 'username': username, 'user_id': user['user_id']})
 
 @app.route('/messages', methods=['GET'])
 def get_messages():
@@ -79,26 +83,38 @@ def delete_message(msg_id):
 def handle_connect():
     """クライアント接続時"""
     print('クライアントが接続しました')
+    # Store the user's session when they connect
+    if 'user_id' in session:
+        connected_users[request.sid] = {
+            'user_id': session['user_id'],
+            'username': session['username']
+        }
+        print(f"User connected: {session['username']} (socket: {request.sid})")
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """クライアント切断時"""
     print('クライアントが切断しました')
+    # Remove user from connected users
+    if request.sid in connected_users:
+        del connected_users[request.sid]
 
 @socketio.on('send_message')
 def handle_message(data):
     """メッセージ送信"""
-    if 'user_id' not in session or 'username' not in session:
+    # Get user info from connected_users dictionary, not Flask session
+    if request.sid not in connected_users:
         emit('error', {'message': 'ログインが必要です'})
         return
+    
+    user_info = connected_users[request.sid]
+    user_id = user_info['user_id']
+    username = user_info['username']
     
     message = data.get('message', '').strip()
     if not message:
         emit('error', {'message': 'メッセージが空です'})
         return
-
-    user_id = session['user_id']
-    username = session['username']
 
     # データベースに保存
     msg_id = db.save_message(user_id, message)
@@ -116,11 +132,23 @@ def handle_message(data):
     else:
         emit('error', {'message': 'メッセージの送信に失敗しました'})
 
+# Add this endpoint to check current user
+@app.route('/current_user', methods=['GET'])
+def get_current_user():
+    """現在のユーザー情報を取得"""
+    if 'user_id' in session:
+        return jsonify({
+            'success': True,
+            'user_id': session['user_id'],
+            'username': session['username']
+        })
+    return jsonify({'success': False, 'message': 'Not logged in'})
+
 if __name__ == '__main__':
     # データベースに接続
     if db.connect():
         print("データベースに接続しました")
         # サーバー起動
-        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
     else:
         print("データベース接続に失敗しました")
