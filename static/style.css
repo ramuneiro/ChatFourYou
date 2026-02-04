@@ -171,6 +171,16 @@ body {
     word-wrap: break-word;
 }
 
+.message-content a {
+    color: #667eea;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.message-content a:hover {
+    color: #5568d3;
+}
+
 .delete-btn {
     position: absolute;
     top: 10px;

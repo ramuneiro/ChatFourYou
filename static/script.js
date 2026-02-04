@@ -119,7 +119,7 @@ messagesContainer.addEventListener('drop', (e) => {
 });
 
 function handleImageSelect(file) {
-    // ファイルサイズチェック（16MB）
+    // ファイルサイズ（16MB）
     if (file.size > 16 * 1024 * 1024) {
         alert('ファイルサイズは16MB以下にしてください');
         return;
@@ -242,7 +242,9 @@ function displayMessage(msg) {
     
     // テキストメッセージを表示
     const textDiv = document.createElement('div');
-    textDiv.textContent = msg.context || msg.message || '';
+    const messageText = msg.context || msg.message || '';
+    // URLをリンクに変換
+    textDiv.innerHTML = linkifyText(messageText);
     contentDiv.appendChild(textDiv);
 
     messageDiv.appendChild(headerDiv);
@@ -285,12 +287,35 @@ function formatTime(timestamp) {
     return `${hours}:${minutes}`;
 }
 
-// 最下部にスクロール
+// テキスト内のURLをリンクに変換
+function linkifyText(text) {
+    // URLを検出する正規表現
+    const urlPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    
+    // HTMLエスケープ
+    const escapeHtml = (str) => {
+        return str.replace(/[&<>"']/g, (match) => {
+            const escape = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return escape[match];
+        });
+    };
+    
+    // テキストをエスケープしてからURLをリンクに変換
+    const escapedText = escapeHtml(text);
+    return escapedText.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
+// スクロール
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Socket.IOイベントリスナー
 socket.on('connect', () => {
     console.log('サーバーに接続しました');
 });
@@ -313,4 +338,4 @@ socket.on('message_deleted', (data) => {
 
 socket.on('error', (data) => {
     alert(data.message);
-});
+});a
