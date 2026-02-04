@@ -101,15 +101,15 @@ class Database:
         return result[0] if result else None
     
     # メッセージ関連のメソッド
-    def save_message(self, user_id, message):
+    def save_message(self, user_id, message, image_url=''):
         """メッセージを保存"""
-        query = "INSERT INTO messages (user_id, message) VALUES (%s, %s)"
-        return self.execute_query(query, (user_id, message))
+        query = "INSERT INTO messages (user_id, message, image_url) VALUES (%s, %s, %s)"
+        return self.execute_query(query, (user_id, message, image_url))
     
     def get_messages(self, limit=50):
         """最新のメッセージを取得"""
         query = """
-              SELECT m.msg_id, m.user_id, u.username, u.display_name, m.message, m.created_at
+              SELECT m.msg_id, m.user_id, u.username, u.display_name, m.message, m.image_url, m.created_at
             FROM messages m
               JOIN users u ON m.user_id = u.user_id
               WHERE m.is_deleted = 0

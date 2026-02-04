@@ -3,9 +3,16 @@ from flask_socketio import SocketIO, emit
 from database import Database
 from config import SECRET_KEY
 import datetime
+import os
+from werkzeug.utils import secure_filename
+import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MBまで
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # データベースインスタンス
@@ -46,6 +53,47 @@ def login():
     session['username'] = user['username']
     
     return jsonify({'success': True, 'username': username})
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    """ユーザーログアウト"""
+    session.clear()
+    return jsonify({'success': True})
+
+def allowed_file(filename):
+    """許可されたファイル拡張子かチェック"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    """画像アップロード"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'ログインが必要です'}), 401
+    
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'message': 'ファイルがありません'}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'ファイルが選択されていません'}), 400
+    
+    if file and allowed_file(file.filename):
+        # ユニークなファイル名を生成
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # ディレクトリがなければ作成
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # ファイルを保存
+        file.save(filepath)
+        
+        # URLパスを返す
+        image_url = f"/static/uploads/{filename}"
+        return jsonify({'success': True, 'image_url': image_url})
+    
+    return jsonify({'success': False, 'message': '無効なファイル形式です（PNG/JPEGのみ）'}), 400
 
 @app.route('/messages', methods=['GET'])
 def get_messages():
@@ -94,15 +142,17 @@ def handle_message(data):
         return
     
     message = data.get('message', '').strip()
-    if not message:
-        emit('error', {'message': 'メッセージが空です'})
+    image_url = data.get('image_url', '')
+    
+    if not message and not image_url:
+        emit('error', {'message': 'メッセージまたは画像が必要です'})
         return
 
     user_id = session['user_id']
     username = session['username']
 
     # データベースに保存
-    msg_id = db.save_message(user_id, message)
+    msg_id = db.save_message(user_id, message, image_url)
 
     if msg_id:
         # 全クライアントにメッセージをブロードキャスト
@@ -111,6 +161,7 @@ def handle_message(data):
             'user_id': user_id,
             'username': username,
             'message': message,
+            'image_url': image_url,
             'created_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         emit('new_message', message_data, broadcast=True)

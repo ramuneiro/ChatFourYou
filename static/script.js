@@ -12,8 +12,14 @@ const logoutBtn = document.getElementById('logout-btn');
 const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
+const imageInput = document.getElementById('image-input');
+const imageBtn = document.getElementById('image-btn');
+const imagePreview = document.getElementById('image-preview');
+const previewImg = document.getElementById('preview-img');
+const cancelImageBtn = document.getElementById('cancel-image-btn');
 
 let username = null;
+let selectedImage = null;
 
 // ログイン処理
 loginBtn.addEventListener('click', login);
@@ -70,14 +76,112 @@ messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
+// 画像選択ボタン
+imageBtn.addEventListener('click', () => {
+    imageInput.click();
+});
+
+// 画像ファイル選択時
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        handleImageSelect(file);
+    }
+});
+
+// 画像キャンセルボタン
+cancelImageBtn.addEventListener('click', () => {
+    selectedImage = null;
+    imagePreview.classList.add('hidden');
+    imageInput.value = '';
+});
+
+// ドラッグ&ドロップイベント
+messagesContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    messagesContainer.classList.add('drag-over');
+});
+
+messagesContainer.addEventListener('dragleave', () => {
+    messagesContainer.classList.remove('drag-over');
+});
+
+messagesContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    messagesContainer.classList.remove('drag-over');
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.match('image/(jpeg|png)')) {
+        handleImageSelect(file);
+    } else {
+        alert('JPEG または PNG 画像のみアップロードできます');
+    }
+});
+
+function handleImageSelect(file) {
+    // ファイルサイズチェック（16MB）
+    if (file.size > 16 * 1024 * 1024) {
+        alert('ファイルサイズは16MB以下にしてください');
+        return;
+    }
+    
+    selectedImage = file;
+    
+    // プレビュー表示
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        imagePreview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
 function sendMessage() {
     const message = messageInput.value.trim();
+    
+    // 画像がある場合は画像を送信
+    if (selectedImage) {
+        uploadAndSendImage(message);
+        return;
+    }
     
     if (!message) return;
     
     socket.emit('send_message', { message: message });
     messageInput.value = '';
 }
+
+async function uploadAndSendImage(message) {
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+    
+    try {
+        const response = await fetch('/upload-image', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 画像URLとメッセージを送信
+            socket.emit('send_message', { 
+                message: message || '画像を送信しました',
+                image_url: data.image_url
+            });
+            
+            // リセット
+            selectedImage = null;
+            imagePreview.classList.add('hidden');
+            imageInput.value = '';
+            messageInput.value = '';
+        } else {
+            alert('画像のアップロードに失敗しました: ' + data.message);
+        }
+    } catch (error) {
+        console.error('画像アップロードエラー:', error);
+        alert('画像のアップロードに失敗しました');
+    }
 
 // メッセージを読み込み
 function loadMessages() {
@@ -125,7 +229,20 @@ function displayMessage(msg) {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = msg.context || msg.message || '';
+    
+    // 画像がある場合は画像を表示
+    if (msg.image_url) {
+        const img = document.createElement('img');
+        img.src = msg.image_url;
+        img.className = 'message-image';
+        img.alt = 'アップロード画像';
+        contentDiv.appendChild(img);
+    }
+    
+    // テキストメッセージを表示
+    const textDiv = document.createElement('div');
+    textDiv.textContent = msg.context || msg.message || '';
+    contentDiv.appendChild(textDiv);
 
     messageDiv.appendChild(headerDiv);
     messageDiv.appendChild(contentDiv);
@@ -195,4 +312,4 @@ socket.on('message_deleted', (data) => {
 
 socket.on('error', (data) => {
     alert(data.message);
-});
+});}

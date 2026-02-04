@@ -34,7 +34,13 @@
                 </div>
 
                 <div class="input-container">
-                    <input type="text" id="message-input" placeholder="メッセージを入力..." maxlength="500">
+                    <input type="file" id="image-input" accept="image/jpeg,image/png" style="display: none;">
+                    <button id="image-btn" title="画像を選択">📎</button>
+                    <div id="image-preview" class="image-preview hidden">
+                        <img id="preview-img" src="" alt="プレビュー">
+                        <button id="cancel-image-btn">×</button>
+                    </div>
+                    <input type="text" id="message-input" placeholder="メッセージを入力...または画像をドラッグ&ドロップ" maxlength="500">
                     <button id="send-btn">送信</button>
                 </div>
             </div>
