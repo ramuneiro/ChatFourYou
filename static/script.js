@@ -72,8 +72,11 @@ logoutBtn.addEventListener('click', () => {
 
 // メッセージ送信
 sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
 });
 
 // 画像選択ボタン
@@ -306,9 +309,10 @@ function linkifyText(text) {
         });
     };
     
-    // テキストをエスケープしてからURLをリンクに変換
+    // テキストをエスケープしてから改行を<br>に変換し、URLをリンクに変換
     const escapedText = escapeHtml(text);
-    return escapedText.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    const textWithBreaks = escapedText.replace(/\n/g, '<br>');
+    return textWithBreaks.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 
 // スクロール

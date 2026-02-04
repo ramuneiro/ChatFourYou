@@ -169,6 +169,7 @@ body {
     color: #333;
     line-height: 1.5;
     word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .message-content a {
@@ -270,7 +271,12 @@ body {
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     transition: border-color 0.3s;
+    resize: vertical;
+    min-height: 44px;
+    max-height: 150px;
+    line-height: 1.5;
 }
 
 #message-input:focus {
