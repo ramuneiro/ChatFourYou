@@ -70,7 +70,7 @@ def delete_message(msg_id):
     result = db.delete_message(msg_id)
     if result is not None:
         # 全クライアントに削除を通知
-        socketio.emit('message_deleted', {'msg_id': msg_id}, broadcast=True)
+        socketio.emit('message_deleted', {'msg_id': msg_id})
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': '削除に失敗しました'})

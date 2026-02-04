@@ -109,9 +109,10 @@ class Database:
     def get_messages(self, limit=50):
         """最新のメッセージを取得"""
         query = """
-              SELECT m.msg_id, m.user_id, u.username, u.display_name, m.context, m.created_at
-            FROM messages 
+              SELECT m.msg_id, m.user_id, u.username, u.display_name, m.message, m.created_at
+            FROM messages m
               JOIN users u ON m.user_id = u.user_id
+              WHERE m.is_deleted = 0
               ORDER BY m.created_at DESC
             LIMIT %s
         """
@@ -119,6 +120,6 @@ class Database:
         return list(reversed(messages))  # 古い順に並び替え
     
     def delete_message(self, msg_id):
-        """メッセージを削除"""
-        query = "DELETE FROM messages WHERE msg_id = %s"
+        """メッセージを削除（論理削除）"""
+        query = "UPDATE messages SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE msg_id = %s"
         return self.execute_query(query, (msg_id,))

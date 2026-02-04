@@ -187,7 +187,7 @@ socket.on('new_message', (data) => {
 });
 
 socket.on('message_deleted', (data) => {
-    const messageDiv = document.querySelector(`[data-message-id="${data.message_id}"]`);
+    const messageDiv = document.querySelector(`[data-message-id="${data.msg_id}"]`);
     if (messageDiv) {
         messageDiv.remove();
     }
