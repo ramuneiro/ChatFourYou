@@ -182,6 +182,7 @@ async function uploadAndSendImage(message) {
         console.error('画像アップロードエラー:', error);
         alert('画像のアップロードに失敗しました');
     }
+}
 
 // メッセージを読み込み
 function loadMessages() {
@@ -312,4 +313,4 @@ socket.on('message_deleted', (data) => {
 
 socket.on('error', (data) => {
     alert(data.message);
-});}
+});

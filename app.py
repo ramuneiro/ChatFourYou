@@ -21,7 +21,11 @@ db = Database()
 @app.before_request
 def before_request():
     """リクエスト前にデータベースに接続"""
-    if not db.connection or not db.connection.is_connected():
+    try:
+        if not db.connection or not db.connection.is_connected():
+            db.connect()
+    except Exception as e:
+        print(f"データベース接続チェックエラー: {e}")
         db.connect()
 
 @app.route('/')
@@ -115,6 +119,21 @@ def delete_message(msg_id):
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'ログインが必要です'})
     
+    # メッセージ情報を取得
+    message = db.get_message_by_id(msg_id)
+    
+    # 画像があればファイルを削除
+    if message and message.get('image_url'):
+        image_path = message['image_url'].lstrip('/')
+        file_path = os.path.join(os.getcwd(), image_path)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"画像ファイルを削除しました: {file_path}")
+            except Exception as e:
+                print(f"画像ファイル削除エラー: {e}")
+    
+    # データベースから削除
     result = db.delete_message(msg_id)
     if result is not None:
         # 全クライアントに削除を通知

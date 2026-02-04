@@ -119,6 +119,12 @@ class Database:
         messages = self.fetch_query(query, (limit,))
         return list(reversed(messages))  # 古い順に並び替え
     
+    def get_message_by_id(self, msg_id):
+        """特定のメッセージを取得"""
+        query = "SELECT * FROM messages WHERE msg_id = %s"
+        result = self.fetch_query(query, (msg_id,))
+        return result[0] if result else None
+    
     def delete_message(self, msg_id):
         """メッセージを削除（論理削除）"""
         query = "UPDATE messages SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE msg_id = %s"
