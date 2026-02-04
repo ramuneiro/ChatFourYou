@@ -338,4 +338,4 @@ socket.on('message_deleted', (data) => {
 
 socket.on('error', (data) => {
     alert(data.message);
-});a
+});
