@@ -12,14 +12,17 @@ const logoutBtn = document.getElementById('logout-btn');
 const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
-const imageInput = document.getElementById('image-input');
-const imageBtn = document.getElementById('image-btn');
-const imagePreview = document.getElementById('image-preview');
-const previewImg = document.getElementById('preview-img');
-const cancelImageBtn = document.getElementById('cancel-image-btn');
+const gifBtn = document.getElementById('gif-btn');
+const gifModal = document.getElementById('gif-modal');
+const gifUrlInput = document.getElementById('gif-url-input');
+const gifAddBtn = document.getElementById('gif-add-btn');
+const gifCancelBtn = document.getElementById('gif-cancel-btn');
+const gifPreview = document.getElementById('gif-preview');
+const gifPreviewImg = document.getElementById('gif-preview-img');
+const cancelGifBtn = document.getElementById('cancel-gif-btn');
 
 let username = null;
-let selectedImage = null;
+let selectedGifUrl = null;
 
 // ログイン処理
 loginBtn.addEventListener('click', login);
@@ -79,72 +82,62 @@ messageInput.addEventListener('keydown', (e) => {
     }
 });
 
-// 画像選択ボタン
-imageBtn.addEventListener('click', () => {
-    imageInput.click();
+// GIFボタン
+gifBtn.addEventListener('click', () => {
+    gifModal.classList.remove('hidden');
+    gifUrlInput.value = '';
+    gifUrlInput.focus();
 });
 
-// 画像ファイル選択時
-imageInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        handleImageSelect(file);
+// GIF追加ボタン
+gifAddBtn.addEventListener('click', () => {
+    const url = gifUrlInput.value.trim();
+    if (url) {
+        handleGifUrl(url);
+        gifModal.classList.add('hidden');
     }
 });
 
-// 画像キャンセルボタン
-cancelImageBtn.addEventListener('click', () => {
-    selectedImage = null;
-    imagePreview.classList.add('hidden');
-    imageInput.value = '';
+// GIFキャンセルボタン
+gifCancelBtn.addEventListener('click', () => {
+    gifModal.classList.add('hidden');
 });
 
-// ドラッグ&ドロップイベント
-messagesContainer.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    messagesContainer.classList.add('drag-over');
+// GIFプレビューキャンセルボタン
+cancelGifBtn.addEventListener('click', () => {
+    selectedGifUrl = null;
+    gifPreview.classList.add('hidden');
 });
 
-messagesContainer.addEventListener('dragleave', () => {
-    messagesContainer.classList.remove('drag-over');
-});
-
-messagesContainer.addEventListener('drop', (e) => {
-    e.preventDefault();
-    messagesContainer.classList.remove('drag-over');
-    
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.match('image/(jpeg|png)')) {
-        handleImageSelect(file);
-    } else {
-        alert('JPEG または PNG 画像のみアップロードできます');
-    }
-});
-
-function handleImageSelect(file) {
-    // ファイルサイズ（16MB）
-    if (file.size > 16 * 1024 * 1024) {
-        alert('ファイルサイズは16MB以下にしてください');
+// GIF URL処理
+function handleGifUrl(url) {
+    // URLの検証
+    if (!isValidUrl(url)) {
+        alert('有効なURLを入力してください');
         return;
     }
     
-    selectedImage = file;
-    
-    // プレビュー表示
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        previewImg.src = e.target.result;
-        imagePreview.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+    selectedGifUrl = url;
+    gifPreviewImg.src = url;
+    gifPreview.classList.remove('hidden');
+}
+
+// URL検証
+function isValidUrl(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
 }
 
 function sendMessage() {
     const message = messageInput.value.trim();
     
-    // 画像がある場合は画像を送信
-    if (selectedImage) {
-        uploadAndSendImage(message);
+    // GIFがある場合はGIF URLを送信
+    if (selectedGifUrl) {
+        sendGifMessage(message);
         return;
     }
     
@@ -154,37 +147,16 @@ function sendMessage() {
     messageInput.value = '';
 }
 
-async function uploadAndSendImage(message) {
-    const formData = new FormData();
-    formData.append('image', selectedImage);
+function sendGifMessage(message) {
+    socket.emit('send_message', { 
+        message: message || 'GIFを送信しました',
+        image_url: selectedGifUrl
+    });
     
-    try {
-        const response = await fetch('/upload-image', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // 画像URLとメッセージを送信
-            socket.emit('send_message', { 
-                message: message || '画像を送信しました',
-                image_url: data.image_url
-            });
-            
-            // リセット
-            selectedImage = null;
-            imagePreview.classList.add('hidden');
-            imageInput.value = '';
-            messageInput.value = '';
-        } else {
-            alert('画像のアップロードに失敗しました: ' + data.message);
-        }
-    } catch (error) {
-        console.error('画像アップロードエラー:', error);
-        alert('画像のアップロードに失敗しました');
-    }
+    // リセット
+    selectedGifUrl = null;
+    gifPreview.classList.add('hidden');
+    messageInput.value = '';
 }
 
 // メッセージを読み込み
