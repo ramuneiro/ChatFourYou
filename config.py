@@ -7,4 +7,5 @@ DB_CONFIG = {
 }
 
 # アプリケーション設定
-SECRET_KEY = 'your-secret-key-here'  
+SECRET_KEY = 'your-secret-key-here'
+PORT = 5001  # ポート番号（変更可能）  

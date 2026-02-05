@@ -82,7 +82,7 @@ def upload_image():
         return jsonify({'success': False, 'message': 'ファイルが選択されていません'}), 400
     
     if file and allowed_file(file.filename):
-        # ユニークなファイル名を生成
+        # ファイル名生成
         ext = file.filename.rsplit('.', 1)[1].lower()
         filename = f"{uuid.uuid4().hex}.{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -119,10 +119,10 @@ def delete_message(msg_id):
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'ログインが必要です'})
     
-    # メッセージ情報を取得
+    # メッセージ情報取得
     message = db.get_message_by_id(msg_id)
     
-    # 画像があればファイルを削除
+    # 画像があればファイル削除
     if message and message.get('image_url'):
         image_path = message['image_url'].lstrip('/')
         file_path = os.path.join(os.getcwd(), image_path)
@@ -136,13 +136,13 @@ def delete_message(msg_id):
     # データベースから削除
     result = db.delete_message(msg_id)
     if result is not None:
-        # 全クライアントに削除を通知
+        # 全クライアントに削除通知
         socketio.emit('message_deleted', {'msg_id': msg_id})
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': '削除に失敗しました'})
 
-# SocketIOイベントハンドラ
+
 @socketio.on('connect')
 def handle_connect():
     """クライアント接続時"""
@@ -174,7 +174,7 @@ def handle_message(data):
     msg_id = db.save_message(user_id, message, image_url)
 
     if msg_id:
-        # 全クライアントにメッセージをブロードキャスト
+        # 全クライアントにメッセージそうしん
         message_data = {
             'msg_id': msg_id,
             'user_id': user_id,
@@ -192,6 +192,6 @@ if __name__ == '__main__':
     if db.connect():
         print("データベースに接続しました")
         # サーバー起動
-        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+        socketio.run(app, host='0.0.0.0', port=4444, debug=True)
     else:
         print("データベース接続に失敗しました")
